@@ -1,0 +1,12 @@
+// This assumes that you are using a Group Naming structure for your Conditional Access Exclusions of CSG-EXCL- 
+// If you are using another name, please edit line 10.
+AuditLogs
+| where OperationName == "Add member to group"
+| extend Type = tostring(TargetResources[0].type)
+| where Type == "User"
+| extend ['Group Name'] = tostring(parse_json(tostring(parse_json(tostring(TargetResources[0].modifiedProperties))[1].newValue)))
+| extend UserAdded = tostring(TargetResources[0].userPrincipalName)
+| where isnotempty(UserAdded)
+| where ['Group Name'] contains "CSG-EXCL-"
+| summarize ['Users Added']=make_set(UserAdded) by ['Group Name'], startofday(TimeGenerated)
+| sort by ['Group Name'] asc, TimeGenerated desc 
